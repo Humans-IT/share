@@ -159,13 +159,21 @@ terraform validate
 
 Pour marquer une ressource à recréer
 
-
 ```bash
 terraform taint google_compute_instance.instanceName
 ```
 ```bash
 terraform plan
 ```
+Pour dé-marquer une ressource 
+
+```bash
+terraform untaint google_compute_instance.instanceName
+```
+```bash
+terraform plan
+```
+
 ## Cleanup
 
 Pour supprimer tout ce que Terraform a provisionné :
@@ -177,13 +185,26 @@ terraform destroy
 yes
 ```
 
+Cette opération ne supprime aucune ressource ayant été créée en dehors de terraform
+
+    **Attention** les ressources créées en dehors de terraform peuvent dépendre de ressources terraform
+
 ## Conclusion Step 1
+
+<walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
+
+Bravo 
 
 Vous avez créé (et détruit) votre première infra grace à Terraform.
 
 Pour approfondir un peu la théorie voici quelques slides :
 
+[Slides](https://docs.google.com/presentation/d/1ADqZv0MTaDwT9P2k9KntRcNWelP741fZ8rmX9CJv6LU/edit?usp=sharing)
 
 
 
+Pour passer à la Step2
 
+```bash
+cd ~/share/Step2 ; teachme tutorial2.md
+```
