@@ -143,7 +143,29 @@ Maintenant essayez de :
 Vous constaterez que Terraform applique toujours la modification `minimale`.
 
 
+## Autres commandes de base
 
+Pour voir l'état du state :
+
+```bash
+terraform show
+```
+
+Pour valider la syntaxe des fichier HCL
+
+```bash
+terraform validate
+```
+
+Pour marquer une ressource à recréer
+
+
+```bash
+terraform taint google_compute_instance.instanceName
+```
+```bash
+terraform plan
+```
 ## Cleanup
 
 Pour supprimer tout ce que Terraform a provisionné :
