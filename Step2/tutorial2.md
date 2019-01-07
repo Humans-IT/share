@@ -47,12 +47,13 @@ Le langage HCL contient d'autres éléments que vous allez découvrir dans cette
 Les différents composants que vous allez aborder dans ce tuto sont :
 
 -   Providers (plugins AWS, GCP etc…)
--   Resources (fournies par les providers)
 -   Variables et des fonction pour l’interpolation
--   Data sources (récupérer ou calculer des datas à injecter dans le build)
 -   Outputs (données importantes de ce qui a été produit)
--   Modules (pour organiser et ré-utiliser DRY)
+-   Resources (fournies par les providers)
 -   Provisioners (pour configurer les ressources)
+-   Data sources (récupérer ou calculer des datas à injecter dans le build)
+-   Modules (pour organiser et ré-utiliser DRY)
+
 
 
 ## Les **providers**
@@ -232,13 +233,10 @@ Modifiez le fichier main2.tf et expérimentez
 
 Terraform contient un certain nombre de fonctions prédéfinies
 
-[Fonctions](https://www.terraform.io/docs/configuration/interpolation.html#supported-built-in-functions)
-
-[Liste des types de machines](https://cloud.google.com/compute/docs/machine-types)
 
 ###Exercice : 
 
-Créez une variable contenant 3 tailles d'instances
+Créez une variable contenant 3 tailles d'instances :
 
 ```hcl-terraform
 variable "machines" {
@@ -253,6 +251,10 @@ variable "machines" {
 ```
 
 Modifiez votre `main2.tf` pour récuperer la bonne machine en utilisant la bonne fonction.
+
+[Fonctions](https://www.terraform.io/docs/configuration/interpolation.html#supported-built-in-functions)
+
+[Liste des types de machines](https://cloud.google.com/compute/docs/machine-types)
 
 ## Override de variables
 
@@ -271,4 +273,195 @@ Cela offre beaucoup de souplesse pour l'automatisation...
 
 Ainsi vous pouvez définir des tailles de machines "logiques" et overrider le mapping logique<=>physique en fonction de l'environnement.
 Avoir des petites machines en TEST et des grosses en PROD avec la même définition terraform juste en overridant la variable `machines`.
+
+## Les Outputs
+
+Les **outputs** sont les valeurs de sortie de votre execution terraform.
+
+Généralement vous l'utiliserez pour publier les valeurs importantes :
+-   l'IP d'un service
+-   un DNS name
+-   les plage d'IP d'un cluster
+-   etc...
+
+la syntaxe est la suivante :
+
+```hcl-terraform
+output "address" {
+  value = "${aws_instance.db.public_dns}"
+}
+```
+
+Les outputs sont écrits sur la console lors de l'executuion mais sont aussi conservées dans le state pour pouvoir être requeté plus tard.
+
+### La command **output**
+
+la commande `terraform output` recupère tous les outputs
+
+`terraform output lb_address` ne recupèrera que l'output demandée
+
+`terraform output -json instance_ips` recupère la liste des ips au format JSON
+
+
+La commande peut donc être utilisée pour scripter :
+
+```
+ssh $(terraform output bastion)
+
+// ou dans le .bash_profile
+// sera toujours à jour même si l'IP change entre chaque restart
+alias bastion='terraform output bastion_ip'
+
+```
+
+## Les resources
+
+Vous avez déjà eu un premier aperçu des resources en utilisant `"google_compute_instance"` 
+
+Il y a plus d'options à découvrir :
+
+### count
+
+Count permet de spécifier un nombre de resources identiques.
+
+`count=3` créera 3 machines
+
+Mais leur nom devra être unique.
+
+Pour cela on a accès à `count.index` qui s'incrémentera pour chaque création exemple :
+
+```hcl-terraform
+resource "google_compute_instance" "instance" {
+  name = "${format("vm-instance-name-%03d", count.index + 1)}"
+  # ...
+}
+```
+
+Les outputs seront donc des listes !
+
+### Provider
+
+Déjà vu précédemment permet de spécifier sur quel alias de provider executer la création de resource.
+
+### Depends-on
+
+`depends_on` permet de préciser manuellement à terraform qu'une resource dépend de la création préalable d'autres resources.
+
+C'est utile pour toute les dépendances que terraform ne peut pas déduire. Par exemple un instance web ecrit des logs dans un bucket. Il n'y a pas de moyen pour terraform d'inferer cette dépendance qui est dans l'app.
+
+## Provisioner
+
+Toujours dans le chapitre resource les `provisioners` permettent d'executer des 'trigger' aprés la création ou la destruction d'une resource
+
+exemple :
+
+```hcl-terraform
+resource "google_compute_instance" "instance" {
+  # ...
+
+  provisioner "local-exec" {
+    command = "echo ${self.name} > file.txt"
+  }
+} 
+```
+
+Il y a plusieurs type de `provisioners` ils ont vocation a ajouter des fichiers, données etc pour finir de créer une resource.
+
+Il ne doivent pas remplacer une gestion de configuration
+
+[Provisioner doc](https://www.terraform.io/docs/provisioners/index.html)
+
+
+## null_resource
+
+La `null_resource` ne crée aucune resource (comme son nom l'indique) mais elle est malgrés tout très utile pour surveiller une valeur (ou une liste de valeurs) appelé `trigger` pour déclencher des `provisioners` 
+
+[cf doc qui est très claire](https://www.terraform.io/docs/provisioners/null_resource.html)
+
+
+## data sources
+
+Les data sources `data` sont fournies par les providers.
+
+Elle servent à interoger des source de données externes pour injecter le résultat dans l'execution du plan terraform.
+
+Par ce biais on peut récupérer des références à des élements n'ayant pas été terraformés.
+
+###exercice :
+
+-   Récupérez le nom du folder (folder.name) du projet courant et ajoutez ce nom de folder comme tag de l'instance.
+
+### Data sources particulières :
+
+```hcl-terraform
+data "null_data_source" "values" {
+  inputs = {
+    all_server_ids = "${concat(aws_instance.green.*.id, aws_instance.blue.*.id)}"
+    all_server_ips = "${concat(aws_instance.green.*.private_ip, aws_instance.blue.*.private_ip)}"
+  }
+}
+```
+
+```hcl-terraform
+data "external" "example" {
+  program = ["python", "${path.module}/example-data-source.py"]
+
+  query = {
+    # arbitrary map from strings to strings, passed
+    # to the external program as the data query.
+    id = "abc123"
+  }
+}
+```
+
+
+[voir aussi random](https://www.terraform.io/docs/providers/random/index.html)
+
+## Modules
+
+Les modules permettent de packager en 'fonctions réutilisables' la création de composants d'infra.
+
+c'est comme un sous terraform appellé par le root module
+
+### usage
+
+```hcl-terraform
+module "consul" {
+  source  = "hashicorp/consul/aws"
+  version = "1.1.0"
+  servers = 3
+}
+```
+
+### sources
+
+Les modules peuvent faire partie du repo et etre locaux ou ils peuvent être distants
+
+-   folder `source = "./consul"`
+-   github `source = "github.com/hashicorp/example"`
+-   bitbucket `source = "bitbucket.org/hashicorp/terraform-consul-aws"`
+-   git `source = "git::ssh://username@example.com/storage.git"`
+-   s3 `source = "s3::https://s3-eu-west-1.amazonaws.com/examplecorp-terraform-modules/vpc.zip"
+        }`
+-   http `source = "https://example.com/vpc-module?archive=zip"`        
+-   [terraform registry (public ou privé)](https://registry.terraform.io/)
+
+Les modules remotes sont téléchargés par le `terraform init`
+
+Les output des modules ne sont pas des outputs du parent.
+Si on le souhaite il faut les faire remonter en créant des outputs sur le parent
+
+La commande `terraform output` permet néanmoins d'utiliser l'option `-module=module-name`
+
+Les modules sont récursifs (un module peux appeler un module)
+
+Les modules peuvent être versionnés en sementic versionning et référencés avec la même syntaxe que pour les plugins.
+
+
+## Modularisation
+
+
+
+
+
 
