@@ -458,10 +458,52 @@ Les modules sont récursifs (un module peux appeler un module)
 Les modules peuvent être versionnés en sementic versionning et référencés avec la même syntaxe que pour les plugins.
 
 
-## Modularisation
+## Modularisation & Collaboration
+
+Utiliser les provider data
+
+accès en lecture à un autre state :
+
+```hcl-terraform
+data "terraform_remote_state" "vpc" {
+  backend = "atlas"
+  config {
+    name = "hashicorp/vpc-prod"
+  }
+}
+
+resource "aws_instance" "foo" {
+  # ...
+  subnet_id = "${data.terraform_remote_state.vpc.subnet_id}"
+}
+```
+
+
+Attention root output accessible seulement
+
+[https://www.youtube.com/watch?v=wgzgVm7Sqlk](https://www.youtube.com/watch?v=wgzgVm7Sqlk)
 
 
 
+## Tooling
 
+-   plugin pour vscode avec autocomplete validation de code
+-   Reformat the output of terraform plan to be easier to read
+and understand.
+https://github.com/coinbase/terraform-landscape
+-   Export existing AWS resources to Terraform style (tf,
+tfstate)
+https://github.com/dtan4/terraforming
+-   Terraform version manager
+https://github.com/Zordrak/tfenv
+-   Generate documentation from Terraform modules
+https://github.com/segmentio/terraform-docs
+-   Detect errors that can not be detected by terraform plan 
+https://github.com/wata727/tflint
+-   Terraform: Interactive Graph visualizations
+https://28mm.github.io/blast-radius-docs/ 
+    
+    
+### Ressources 
 
-
+https://github.com/shuaibiyy/awesome-terraform    
