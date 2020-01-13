@@ -139,9 +139,9 @@ Maintenant essayez de :
 
 Liens :
 
-[Instances](https://cloud.google.com/compute/vm-instance-pricing)
+[Instances GCE](https://cloud.google.com/compute/vm-instance-pricing)
 
-[Images disque](https://cloud.google.com/compute/docs/images?hl=fr#os-compute-support)
+[Images disque GCE](https://cloud.google.com/compute/docs/images?hl=fr#os-compute-support)
 
 
 Vous constaterez que Terraform applique toujours la modification `minimale`.
