@@ -34,8 +34,7 @@ Vérifiez vos droits :
 
 
 ```bash
-gcloud projects get-iam-policy {{project-id}} --flatten="bindings[].members" --format="table(bindings.role)" --
-filter="bindings.members:$(gcloud config list account --format 'value(core.account)')"
+gcloud projects get-iam-policy {{project-id}} --flatten="bindings[].members" --format="table(bindings.role)" --filter="bindings.members:$(gcloud config list account --format 'value(core.account)')"
 ```
 
 Vous avez les droits pour provisionner une infra ? 
@@ -138,6 +137,11 @@ Maintenant essayez de :
 -   de renommer la machine
 -   etc...
 
+Liens :
+
+[Instances](https://cloud.google.com/compute/vm-instance-pricing)
+
+[Images disque](https://cloud.google.com/compute/docs/images?hl=fr#os-compute-support)
 
 
 Vous constaterez que Terraform applique toujours la modification `minimale`.
